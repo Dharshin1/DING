@@ -1,13 +1,15 @@
 import argparse
 from src import data
 
+
 def init(args):
     data.init()
 
-def parse_args():
-    parser= argparse.ArgumentParser(prog="ding")
 
-    commands= parser.add_subparsers(dest="command", required=True)
+def parse_args():
+    parser = argparse.ArgumentParser(prog="ding")
+
+    commands = parser.add_subparsers(dest="command", required=True)
 
     init_parser = commands.add_parser("init")
     init_parser.set_defaults(func=init)
