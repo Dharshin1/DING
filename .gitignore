@@ -1,9 +1,4 @@
 build/
-<<<<<<< HEAD
 ding.egg-info/
 __pycache__/
 .venv/
-Contributors/
-
-=======
->>>>>>> 1557cbd (Remove homework directory from repository)
