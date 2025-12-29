@@ -1,9 +1,0 @@
-README.md
-setup.py
-ding.egg-info/PKG-INFO
-ding.egg-info/SOURCES.txt
-ding.egg-info/dependency_links.txt
-ding.egg-info/entry_points.txt
-ding.egg-info/top_level.txt
-src/base.py
-src/cli.py
