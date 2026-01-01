@@ -1,5 +1,20 @@
 import os
 import hashlib
+import time
+import gzip
+import bz2
+import lzma
+
+try:
+    import zstd
+except ImportError:
+    zstd = None
+
+try:
+    import lz4.frame as lz4f
+except ImportError:
+    lz4f = None
+
 
 DING_DIR = ".ding"
 
@@ -44,16 +59,58 @@ def repo_path():
     return None
 
 
+def compress_raw(data):
+    return data
+
+
+def compress_gzip(data):
+    return gzip.compress(data, compresslevel=6)
+
+
+def compress_bz2(data):
+    return bz2.compress(data, compresslevel=9)
+
+
+def compress_lzma(data):
+    return lzma.compress(data, preset=6)
+
+
+def compress_zstd(data):
+    if not zstd:
+        raise RuntimeError("zstd not installed")
+    return zstd.ZSTD_compress(data, 6)
+    
+
+
+def compress_lz4(data):
+    if not lz4f:
+        raise RuntimeError("lz4 not installed")
+    return lz4f.compress(data)
+
+
+ALGORITHMS = {
+    "raw": compress_raw,
+    "gzip": compress_gzip,
+    "bz2": compress_bz2,
+    "lzma": compress_lzma,
+}
+
+if zstd:
+    ALGORITHMS["zstd"] = compress_zstd
+
+if lz4f:
+    ALGORITHMS["lz4"] = compress_lz4
+
+
 def hash_objects(args):
     repo = repo_path()
     if repo is None:
         print("error: not inside a ding repository")
         return
-    ding_path = os.path.join(repo, DING_DIR)
 
+    ding_path = os.path.join(repo, DING_DIR)
     objects_path = os.path.join(ding_path, "objects")
-    if not os.path.exists(objects_path):
-        os.mkdir(objects_path)
+    os.makedirs(objects_path, exist_ok=True)
 
     filename = args.file
     try:
@@ -63,8 +120,32 @@ def hash_objects(args):
         print(f"error: file not found: {filename}")
         return
 
+    original_size = len(content)
     oid = hashlib.sha256(content).hexdigest()
-    print(oid)
-    object_file_path = os.path.join(objects_path, oid)
-    with open(object_file_path, "wb") as f:
-        f.write(content)
+
+    print(f"\nFile hash: {oid}")
+    print(f"Original size: {original_size} bytes\n")
+
+    results = []
+
+    for name, compressor in ALGORITHMS.items():
+        start = time.perf_counter()
+        compressed = compressor(content)
+        elapsed = time.perf_counter() - start
+
+        compressed_size = len(compressed)
+        ratio = compressed_size / original_size
+
+        obj_name = f"{name}-{oid}"
+        obj_path = os.path.join(objects_path, obj_name)
+
+        with open(obj_path, "wb") as f:
+            f.write(compressed)
+
+        results.append((name, elapsed, compressed_size, ratio))
+
+    print("Algorithm | Time (ms) | Size (bytes) | Ratio")
+    print("-" * 50)
+    for name, t, size, ratio in results:
+        print(f"{name:8} | {t*1000:8.2f} | {size:12} | {ratio:.3f}")
+
