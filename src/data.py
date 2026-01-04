@@ -46,10 +46,10 @@ def repo_path():
     return None
 
 
-def hash_objects(args):
+def hash_objects(filename):
     repo = repo_path()
     if repo is None:
-        print("error: not inside a ding repository")
+        print("error: not a ding repository")
         return
     
     ding_path = os.path.join(repo, DING_DIR)
@@ -58,7 +58,6 @@ def hash_objects(args):
     if not os.path.exists(objects_path):
         os.mkdir(objects_path)
 
-    filename = args.file
     try:
         with open(filename, "rb") as f:
             content = f.read()
@@ -74,3 +73,8 @@ def hash_objects(args):
     object_file_path = os.path.join(objects_path, oid)
     with open(object_file_path, "wb") as f:
         f.write(compressed_data)
+
+
+def decompress(hash):
+    
+    pass
